@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stylish Marvel Rivals Overlay</title>
+    <title>Marvel Rivals Overlay v2</title>
     <!-- React + ReactDOM + Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -13,7 +13,7 @@
 
     <style>
         /*────────────────────────
-      Character theming
+      Theming
     ────────────────────────*/
         :root {
             --primary-color: #e62429;
@@ -30,10 +30,8 @@
             --secondary-color: #000;
         }
 
-        /* add more heroes... */
-
         /*────────────────────────
-      Base overlay
+      Base
     ────────────────────────*/
         body,
         html {
@@ -43,6 +41,8 @@
             height: 100%;
             overflow: hidden;
             background: transparent;
+            font-family: sans-serif;
+            color: white;
         }
 
         .overlay {
@@ -52,11 +52,10 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            font-family: sans-serif;
         }
 
         /*────────────────────────
-      Crosshair + pulsing
+      Crosshair
     ────────────────────────*/
         .crosshair {
             position: absolute;
@@ -112,7 +111,7 @@
         }
 
         /*────────────────────────
-      Health warning text
+      Health warnings
     ────────────────────────*/
         .health-warning {
             position: absolute;
@@ -156,7 +155,7 @@
         }
 
         /*────────────────────────
-      Minimap (centered)
+      Minimap (no bg)
     ────────────────────────*/
         .minimap {
             position: absolute;
@@ -167,12 +166,10 @@
             transform: translate(-50%, -50%);
             border: 2px solid var(--secondary-color);
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.4);
             pointer-events: none;
         }
 
-        .minimap .friend,
-        .minimap .enemy {
+        .minimap .unit {
             position: absolute;
             width: 12px;
             height: 12px;
@@ -189,41 +186,43 @@
         }
 
         /*────────────────────────
-      Side panels
+      Unit lists
     ────────────────────────*/
-        .friend-panel,
-        .enemy-panel {
+        ul.unit-list {
             position: absolute;
             top: 50%;
-            width: 200px;
             transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 8px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
             pointer-events: none;
         }
 
-        .friend-panel {
+        ul.friend-list {
             left: calc(50% - 220px);
-            border: 2px solid #00aaff;
         }
 
-        .enemy-panel {
+        ul.enemy-list {
             left: calc(50% + 20px);
-            border: 2px solid #ff0055;
         }
 
-        .friend-panel h3,
-        .enemy-panel h3 {
-            margin: 0 0 6px;
-            font-size: 14px;
-            color: var(--secondary-color);
-        }
-
-        .friend-panel div,
-        .enemy-panel div {
+        ul.unit-list li {
+            margin: 6px 0;
+            padding: 4px 8px;
+            border: 2px solid;
+            border-radius: 4px;
+            min-width: 160px;
+            display: flex;
+            justify-content: space-between;
             font-size: 13px;
-            line-height: 1.4;
+        }
+
+        ul.friend-list li {
+            border-color: #00aaff;
+        }
+
+        ul.enemy-list li {
+            border-color: #ff0055;
         }
 
         .dead {
@@ -231,25 +230,69 @@
         }
 
         /*────────────────────────
-      Health slider (test only)
+      Ability bar
+    ────────────────────────*/
+        .ability-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .ability {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 4px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ability .cd-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /*────────────────────────
+      Testing controls
     ────────────────────────*/
         .testing-panel {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 8px;
-            border-radius: 6px;
             pointer-events: auto;
-            color: #fff;
             font-size: 13px;
-            text-align: center;
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
-        .testing-panel input {
-            width: 180px;
-            margin-top: 4px;
+        .testing-panel button {
+            padding: 6px 10px;
+            border: 1px solid #888;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .testing-panel input[type="range"] {
+            width: 160px;
         }
     </style>
 </head>
@@ -261,47 +304,56 @@
         const { useState, useEffect } = React;
 
         function Overlay() {
-            // testing-only health slider
+            // health & speed
             const [health, setHealth] = useState(100);
-            // dummy speed (replace with real feed)
             const [speed] = useState(0);
 
+            // fade on mousemove
             const [transparent, setTransparent] = useState(false);
+            useEffect(() => {
+                let to;
+                const onMove = () => {
+                    setTransparent(true);
+                    clearTimeout(to);
+                    to = setTimeout(() => setTransparent(false), 400);
+                };
+                window.addEventListener('mousemove', onMove);
+                return () => window.removeEventListener('mousemove', onMove);
+            }, []);
 
-            // dummy positions
+            // unit positions
             const friends = [
-                { id: 'F1', x: -30, y: 20 },
-                { id: 'F2', x: 50, y: -40 },
+                { id: 'F1', x: -30, y: 20 }, { id: 'F2', x: 50, y: -40 }
             ];
             const enemies = [
-                { id: 'E1', x: 60, y: 30 },
-                { id: 'E2', x: -70, y: -50 },
+                { id: 'E1', x: 60, y: 30 }, { id: 'E2', x: -70, y: -50 }
             ];
             const teamStatus = [
                 { id: 'F1', alive: true, respawn: 0 },
-                { id: 'F2', alive: false, respawn: 12 },
+                { id: 'F2', alive: false, respawn: 12 }
             ];
             const enemyStatus = [
                 { id: 'E1', alive: true, respawn: 0 },
-                { id: 'E2', alive: false, respawn: 8 },
+                { id: 'E2', alive: false, respawn: 8 }
             ];
 
-            // fade on mousemove
+            // abilities state + timer loop
+            const initialCd = { A: 0, B: 0 };
+            const [cds, setCds] = useState(initialCd);
             useEffect(() => {
-                let timeout;
-                const onMove = () => {
-                    setTransparent(true);
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => setTransparent(false), 400);
-                };
-                window.addEventListener('mousemove', onMove);
-                return () => {
-                    window.removeEventListener('mousemove', onMove);
-                    clearTimeout(timeout);
-                };
+                const timer = setInterval(() => {
+                    setCds(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(k => {
+                            if (next[k] > 0) next[k] = Math.max(0, next[k] - 1);
+                        });
+                        return next;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
             }, []);
 
-            // health-based classes & warning
+            // health class + warning
             const healthClass =
                 health > 75 ? 'healthy'
                     : health > 50 ? 'wounded'
@@ -309,34 +361,48 @@
                             : 'critical';
 
             const warning =
-                health <= 25 ? { text: 'CRITICAL HEALTH!', level: 'critical' }
-                    : health <= 50 ? { text: 'ALERT: Low Health', level: 'alert' }
-                        : health <= 75 ? { text: 'Warning: Injured', level: 'warn' }
+                health <= 25 ? ['CRITICAL HEALTH!', 'critical']
+                    : health <= 50 ? ['ALERT: Low Health', 'alert']
+                        : health <= 75 ? ['Warning: Injured', 'warn']
                             : null;
 
             return (
                 <div className="overlay">
+                    {/* Abilities */}
+                    <div className="ability-bar">
+                        {['A', 'B'].map(key => (
+                            <div key={key} className="ability">
+                                {key}
+                                {cds[key] > 0 && (
+                                    <div className="cd-overlay">
+                                        {cds[key]}s
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
                     {/* Crosshair */}
                     <div className={`crosshair ${transparent ? 'transparent' : ''} ${healthClass}`} />
 
                     {/* Health warning */}
                     {warning && (
-                        <div className={`health-warning ${warning.level}`}>
-                            {warning.text}
+                        <div className={`health-warning ${warning[1]}`}>
+                            {warning[0]}
                         </div>
                     )}
 
-                    {/* Speed readout */}
+                    {/* Speed */}
                     <div className="speed">
                         Speed: {speed} m/s
                     </div>
 
-                    {/* Circular minimap */}
+                    {/* Minimap */}
                     <div className="minimap">
                         {friends.map(f => (
                             <div
                                 key={f.id}
-                                className="friend"
+                                className="unit friend"
                                 style={{
                                     left: `calc(50% + ${f.x}px)`,
                                     top: `calc(50% + ${f.y}px)`
@@ -347,7 +413,7 @@
                         {enemies.map(e => (
                             <div
                                 key={e.id}
-                                className="enemy"
+                                className="unit enemy"
                                 style={{
                                     left: `calc(50% + ${e.x}px)`,
                                     top: `calc(50% + ${e.y}px)`
@@ -357,44 +423,52 @@
                         ))}
                     </div>
 
-                    {/* Team status (left) */}
-                    <div className="friend-panel">
-                        <h3>Your Team</h3>
+                    {/* Friend list */}
+                    <ul className="unit-list friend-list">
                         {teamStatus.map(p => (
-                            <div key={p.id}>
-                                {p.id}: <span className={p.alive ? '' : 'dead'}>
-                                    {p.alive ? 'Alive' : `Respawn in ${p.respawn}s`}
+                            <li key={p.id}>
+                                <span>{p.id}</span>
+                                <span className={p.alive ? '' : 'dead'}>
+                                    {p.alive ? 'Alive' : `Respawn ${p.respawn}s`}
                                 </span>
-                            </div>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
 
-                    {/* Enemy status (right) */}
-                    <div className="enemy-panel">
-                        <h3>Enemies</h3>
+                    {/* Enemy list */}
+                    <ul className="unit-list enemy-list">
                         {enemyStatus.map(p => (
-                            <div key={p.id}>
-                                {p.id}: <span className={p.alive ? '' : 'dead'}>
-                                    {p.alive ? 'Alive' : `Respawn in ${p.respawn}s`}
+                            <li key={p.id}>
+                                <span>{p.id}</span>
+                                <span className={p.alive ? '' : 'dead'}>
+                                    {p.alive ? 'Alive' : `Respawn ${p.respawn}s`}
                                 </span>
-                            </div>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
 
-                    {/* Testing slider for health */}
+                    {/* Testing panel */}
                     <div className="testing-panel">
-                        <label>Health: {health}%</label>
+                        <label>Health {health}%</label>
                         <input
                             type="range" min="0" max="100"
                             value={health}
                             onChange={e => setHealth(+e.target.value)}
                         />
+
+                        <button onClick={() => setCds(prev => ({ ...prev, A: 10 }))}>
+                            Trigger A
+                        </button>
+                        <button onClick={() => setCds(prev => ({ ...prev, B: 8 }))}>
+                            Trigger B
+                        </button>
                     </div>
                 </div>
             );
         }
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<Overlay />);
+        ReactDOM.createRoot(document.getElementById('root'))
+            .render(<Overlay />);
     </script>
 </body>
 
