@@ -5,16 +5,18 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marvel Rivals Overlay</title>
-    <!-- React + ReactDOM + Babel (for JSX) -->
+    <title>Stylish Marvel Rivals Overlay</title>
+    <!-- React + ReactDOM + Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
     <style>
-        /* --- Character themes via CSS variables --- */
+        /*────────────────────────
+      Character theming
+    ────────────────────────*/
         :root {
             --primary-color: #e62429;
-            /* default */
             --secondary-color: #f5c542;
         }
 
@@ -25,12 +27,24 @@
 
         html[data-character="spiderman"] {
             --primary-color: #e23f31;
-            --secondary-color: #000000;
+            --secondary-color: #000;
         }
 
-        /* Add more themes as needed */
+        /* add more heroes... */
 
-        /* --- Overlay container --- */
+        /*────────────────────────
+      Base overlay
+    ────────────────────────*/
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+
         .overlay {
             position: fixed;
             top: 0;
@@ -39,20 +53,21 @@
             height: 100vh;
             pointer-events: none;
             font-family: sans-serif;
-            color: white;
         }
 
-        /* --- Crosshair --- */
+        /*────────────────────────
+      Crosshair + pulsing
+    ────────────────────────*/
         .crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             width: 40px;
             height: 40px;
-            margin: -20px 0 0 -20px;
-            border: 2px solid var(--primary-color);
+            border: 3px solid var(--primary-color);
             border-radius: 50%;
             box-shadow: 0 0 8px var(--primary-color);
+            transform: translate(-50%, -50%);
             transition: opacity 0.3s ease;
             opacity: 1;
         }
@@ -61,27 +76,99 @@
             opacity: 0.2;
         }
 
-        /* --- Minimap --- */
-        .minimap {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 200px;
-            height: 200px;
-            border: 2px solid var(--secondary-color);
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
+        .crosshair.healthy {
+            border-color: limegreen;
+            box-shadow: 0 0 8px limegreen;
         }
 
-        .minimap .center {
+        .crosshair.wounded {
+            border-color: gold;
+            box-shadow: 0 0 8px gold;
+        }
+
+        .crosshair.alert {
+            border-color: orange;
+            box-shadow: 0 0 10px orange;
+        }
+
+        .crosshair.critical {
+            border-color: red;
+            box-shadow: 0 0 12px red;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        /*────────────────────────
+      Health warning text
+    ────────────────────────*/
+        .health-warning {
+            position: absolute;
+            top: calc(50% - 70px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            pointer-events: none;
+            font-size: 14px;
+        }
+
+        .health-warning.warn {
+            background: rgba(255, 165, 0, 0.8);
+            color: #000;
+        }
+
+        .health-warning.alert {
+            background: rgba(255, 69, 0, 0.8);
+            color: #fff;
+        }
+
+        .health-warning.critical {
+            background: rgba(255, 0, 0, 0.9);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        /*────────────────────────
+      Speed readout
+    ────────────────────────*/
+        .speed {
+            position: absolute;
+            top: calc(50% + 30px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+        }
+
+        /*────────────────────────
+      Minimap (centered)
+    ────────────────────────*/
+        .minimap {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 6px;
-            height: 6px;
-            background: var(--primary-color);
-            border-radius: 50%;
+            width: 180px;
+            height: 180px;
             transform: translate(-50%, -50%);
+            border: 2px solid var(--secondary-color);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            pointer-events: none;
         }
 
         .minimap .friend,
@@ -101,29 +188,68 @@
             background: #ff0055;
         }
 
-        /* --- Status panels --- */
-        .status-panel {
+        /*────────────────────────
+      Side panels
+    ────────────────────────*/
+        .friend-panel,
+        .enemy-panel {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.6);
+            top: 50%;
+            width: 200px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
             padding: 10px;
             border-radius: 8px;
+            pointer-events: none;
         }
 
-        .status-panel h3 {
+        .friend-panel {
+            left: calc(50% - 220px);
+            border: 2px solid #00aaff;
+        }
+
+        .enemy-panel {
+            left: calc(50% + 20px);
+            border: 2px solid #ff0055;
+        }
+
+        .friend-panel h3,
+        .enemy-panel h3 {
             margin: 0 0 6px;
             font-size: 14px;
             color: var(--secondary-color);
         }
 
-        .status-panel div {
+        .friend-panel div,
+        .enemy-panel div {
             font-size: 13px;
             line-height: 1.4;
         }
 
-        .status-panel .dead {
+        .dead {
             opacity: 0.5;
+        }
+
+        /*────────────────────────
+      Health slider (test only)
+    ────────────────────────*/
+        .testing-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px;
+            border-radius: 6px;
+            pointer-events: auto;
+            color: #fff;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .testing-panel input {
+            width: 180px;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -135,55 +261,86 @@
         const { useState, useEffect } = React;
 
         function Overlay() {
-            // transparency on mouse move
+            // testing-only health slider
+            const [health, setHealth] = useState(100);
+            // dummy speed (replace with real feed)
+            const [speed] = useState(0);
+
             const [transparent, setTransparent] = useState(false);
 
-            // dummy data; replace with real Overwolf game-data hooks
-            const [friends] = useState([
-                { id: 'F1', x: 30, y: 70 },
-                { id: 'F2', x: 60, y: 40 }
-            ]);
-            const [enemies] = useState([
-                { id: 'E1', x: 80, y: 20 },
-                { id: 'E2', x: 10, y: 50 }
-            ]);
-            const [teamStatus] = useState([
+            // dummy positions
+            const friends = [
+                { id: 'F1', x: -30, y: 20 },
+                { id: 'F2', x: 50, y: -40 },
+            ];
+            const enemies = [
+                { id: 'E1', x: 60, y: 30 },
+                { id: 'E2', x: -70, y: -50 },
+            ];
+            const teamStatus = [
                 { id: 'F1', alive: true, respawn: 0 },
-                { id: 'F2', alive: false, respawn: 12 }
-            ]);
-            const [enemyStatus] = useState([
+                { id: 'F2', alive: false, respawn: 12 },
+            ];
+            const enemyStatus = [
                 { id: 'E1', alive: true, respawn: 0 },
-                { id: 'E2', alive: false, respawn: 8 }
-            ]);
+                { id: 'E2', alive: false, respawn: 8 },
+            ];
 
+            // fade on mousemove
             useEffect(() => {
                 let timeout;
-                const handleMove = () => {
+                const onMove = () => {
                     setTransparent(true);
                     clearTimeout(timeout);
                     timeout = setTimeout(() => setTransparent(false), 400);
                 };
-                window.addEventListener('mousemove', handleMove);
+                window.addEventListener('mousemove', onMove);
                 return () => {
-                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('mousemove', onMove);
                     clearTimeout(timeout);
                 };
             }, []);
 
-            // example: switch theme dynamically
-            // useEffect(() => { document.documentElement.dataset.character = 'spiderman'; }, []);
+            // health-based classes & warning
+            const healthClass =
+                health > 75 ? 'healthy'
+                    : health > 50 ? 'wounded'
+                        : health > 25 ? 'alert'
+                            : 'critical';
+
+            const warning =
+                health <= 25 ? { text: 'CRITICAL HEALTH!', level: 'critical' }
+                    : health <= 50 ? { text: 'ALERT: Low Health', level: 'alert' }
+                        : health <= 75 ? { text: 'Warning: Injured', level: 'warn' }
+                            : null;
 
             return (
                 <div className="overlay">
-                    <div className={`crosshair ${transparent ? 'transparent' : ''}`}></div>
+                    {/* Crosshair */}
+                    <div className={`crosshair ${transparent ? 'transparent' : ''} ${healthClass}`} />
 
+                    {/* Health warning */}
+                    {warning && (
+                        <div className={`health-warning ${warning.level}`}>
+                            {warning.text}
+                        </div>
+                    )}
+
+                    {/* Speed readout */}
+                    <div className="speed">
+                        Speed: {speed} m/s
+                    </div>
+
+                    {/* Circular minimap */}
                     <div className="minimap">
-                        <div className="center"></div>
                         {friends.map(f => (
                             <div
                                 key={f.id}
                                 className="friend"
-                                style={{ top: `${f.y}%`, left: `${f.x}%` }}
+                                style={{
+                                    left: `calc(50% + ${f.x}px)`,
+                                    top: `calc(50% + ${f.y}px)`
+                                }}
                                 title={f.id}
                             />
                         ))}
@@ -191,31 +348,47 @@
                             <div
                                 key={e.id}
                                 className="enemy"
-                                style={{ top: `${e.y}%`, left: `${e.x}%` }}
+                                style={{
+                                    left: `calc(50% + ${e.x}px)`,
+                                    top: `calc(50% + ${e.y}px)`
+                                }}
                                 title={e.id}
                             />
                         ))}
                     </div>
 
-                    <div className="status-panel">
+                    {/* Team status (left) */}
+                    <div className="friend-panel">
                         <h3>Your Team</h3>
                         {teamStatus.map(p => (
                             <div key={p.id}>
-                                {p.id}:{" "}
-                                <span className={p.alive ? "" : "dead"}>
-                                    {p.alive ? "Alive" : `Respawn in ${p.respawn}s`}
+                                {p.id}: <span className={p.alive ? '' : 'dead'}>
+                                    {p.alive ? 'Alive' : `Respawn in ${p.respawn}s`}
                                 </span>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Enemy status (right) */}
+                    <div className="enemy-panel">
                         <h3>Enemies</h3>
                         {enemyStatus.map(p => (
                             <div key={p.id}>
-                                {p.id}:{" "}
-                                <span className={p.alive ? "" : "dead"}>
-                                    {p.alive ? "Alive" : `Respawn in ${p.respawn}s`}
+                                {p.id}: <span className={p.alive ? '' : 'dead'}>
+                                    {p.alive ? 'Alive' : `Respawn in ${p.respawn}s`}
                                 </span>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Testing slider for health */}
+                    <div className="testing-panel">
+                        <label>Health: {health}%</label>
+                        <input
+                            type="range" min="0" max="100"
+                            value={health}
+                            onChange={e => setHealth(+e.target.value)}
+                        />
                     </div>
                 </div>
             );
