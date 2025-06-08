@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marvel Rivals Overlay v2</title>
+    <title>Overlay v3</title>
     <!-- React + ReactDOM + Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -33,6 +33,10 @@
         /*────────────────────────
       Base
     ────────────────────────*/
+        * {
+            box-sizing: border-box;
+        }
+
         body,
         html {
             margin: 0;
@@ -43,6 +47,7 @@
             background: transparent;
             font-family: sans-serif;
             color: white;
+            user-select: none;
         }
 
         .overlay {
@@ -55,26 +60,63 @@
         }
 
         /*────────────────────────
-      Crosshair
+      Cooldowns ABOVE crosshair
+    ────────────────────────*/
+        .ability-bar {
+            position: absolute;
+            top: calc(50% - 80px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .ability {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .cd-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /*────────────────────────
+      Crosshair + dot / X
     ────────────────────────*/
         .crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
+            transform: translate(-50%, -50%);
             border: 3px solid var(--primary-color);
             border-radius: 50%;
             box-shadow: 0 0 8px var(--primary-color);
-            transform: translate(-50%, -50%);
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, border-color .3s, box-shadow .3s;
             opacity: 1;
+            pointer-events: none;
         }
 
         .crosshair.transparent {
             opacity: 0.2;
         }
 
+        /* health‐driven */
         .crosshair.healthy {
             border-color: limegreen;
             box-shadow: 0 0 8px limegreen;
@@ -93,21 +135,64 @@
         .crosshair.critical {
             border-color: red;
             box-shadow: 0 0 12px red;
-            animation: pulse 1s ease-in-out infinite;
+            animation: pulse 1s infinite;
         }
 
         @keyframes pulse {
-            0% {
+
+            0%,
+            100% {
                 transform: translate(-50%, -50%) scale(1);
             }
 
             50% {
                 transform: translate(-50%, -50%) scale(1.15);
             }
+        }
 
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-            }
+        /* center dot */
+        .center-dot,
+        .center-x {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            pointer-events: none;
+        }
+
+        .center-dot.healthy {
+            background: limegreen;
+        }
+
+        .center-dot.wounded {
+            background: gold;
+        }
+
+        .center-dot.alert {
+            background: orange;
+        }
+
+        .center-dot.critical {
+            background: red;
+        }
+
+        .center-x {
+            display: none;
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .crosshair.hovered .center-dot {
+            display: none;
+        }
+
+        .crosshair.hovered .center-x {
+            display: block;
         }
 
         /*────────────────────────
@@ -127,22 +212,22 @@
 
         .health-warning.warn {
             background: rgba(255, 165, 0, 0.8);
-            color: #000;
+            color: #000
         }
 
         .health-warning.alert {
             background: rgba(255, 69, 0, 0.8);
-            color: #fff;
+            color: #fff
         }
 
         .health-warning.critical {
             background: rgba(255, 0, 0, 0.9);
             color: #fff;
-            font-size: 16px;
+            font-size: 16px
         }
 
         /*────────────────────────
-      Speed readout
+      Speed
     ────────────────────────*/
         .speed {
             position: absolute;
@@ -155,7 +240,7 @@
         }
 
         /*────────────────────────
-      Minimap (no bg)
+      Minimap (rotating)
     ────────────────────────*/
         .minimap {
             position: absolute;
@@ -163,30 +248,53 @@
             left: 50%;
             width: 180px;
             height: 180px;
-            transform: translate(-50%, -50%);
-            border: 2px solid var(--secondary-color);
+            transform: translate(-50%, -50%) rotate(0deg);
+            border: 3px solid var(--primary-color);
             border-radius: 50%;
+            transition: border-color .3s, box-shadow .3s, transform .5s ease;
             pointer-events: none;
         }
 
-        .minimap .unit {
+        /* health colors on border */
+        .minimap.healthy {
+            border-color: limegreen;
+            box-shadow: 0 0 8px limegreen
+        }
+
+        .minimap.wounded {
+            border-color: gold;
+            box-shadow: 0 0 8px gold
+        }
+
+        .minimap.alert {
+            border-color: orange;
+            box-shadow: 0 0 10px orange
+        }
+
+        .minimap.critical {
+            border-color: red;
+            box-shadow: 0 0 12px red;
+            animation: pulse 1s infinite
+        }
+
+        .unit {
             position: absolute;
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%)
         }
 
-        .minimap .friend {
-            background: #00aaff;
+        .friend {
+            background: #00aaff
         }
 
-        .minimap .enemy {
-            background: #ff0055;
+        .enemy {
+            background: #ff0055
         }
 
         /*────────────────────────
-      Unit lists
+      Lists outside minimap
     ────────────────────────*/
         ul.unit-list {
             position: absolute;
@@ -199,11 +307,11 @@
         }
 
         ul.friend-list {
-            left: calc(50% - 220px);
+            left: calc(50% - 310px);
         }
 
         ul.enemy-list {
-            left: calc(50% + 20px);
+            left: calc(50% + 110px);
         }
 
         ul.unit-list li {
@@ -211,64 +319,25 @@
             padding: 4px 8px;
             border: 2px solid;
             border-radius: 4px;
-            min-width: 160px;
             display: flex;
             justify-content: space-between;
             font-size: 13px;
         }
 
         ul.friend-list li {
-            border-color: #00aaff;
+            border-color: #00aaff
         }
 
         ul.enemy-list li {
-            border-color: #ff0055;
+            border-color: #ff0055
         }
 
         .dead {
-            opacity: 0.5;
+            opacity: 0.5
         }
 
         /*────────────────────────
-      Ability bar
-    ────────────────────────*/
-        .ability-bar {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            pointer-events: none;
-        }
-
-        .ability {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--secondary-color);
-            border-radius: 4px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ability .cd-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        /*────────────────────────
-      Testing controls
+      Testing panel
     ────────────────────────*/
         .testing-panel {
             position: absolute;
@@ -276,14 +345,15 @@
             left: 50%;
             transform: translateX(-50%);
             pointer-events: auto;
-            font-size: 13px;
             display: flex;
             gap: 12px;
             align-items: center;
+            font-size: 13px;
         }
 
-        .testing-panel button {
-            padding: 6px 10px;
+        .testing-panel button,
+        .testing-panel input {
+            padding: 4px 8px;
             border: 1px solid #888;
             border-radius: 4px;
             background: rgba(255, 255, 255, 0.1);
@@ -291,8 +361,18 @@
             cursor: pointer;
         }
 
-        .testing-panel input[type="range"] {
-            width: 160px;
+        .draggable-target {
+            position: absolute;
+            top: calc(50% - 8px);
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 50%;
+            cursor: move;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -301,14 +381,14 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         function Overlay() {
             // health & speed
             const [health, setHealth] = useState(100);
             const [speed] = useState(0);
 
-            // fade on mousemove
+            // fade crosshair
             const [transparent, setTransparent] = useState(false);
             useEffect(() => {
                 let to;
@@ -321,69 +401,80 @@
                 return () => window.removeEventListener('mousemove', onMove);
             }, []);
 
-            // unit positions
-            const friends = [
-                { id: 'F1', x: -30, y: 20 }, { id: 'F2', x: 50, y: -40 }
-            ];
-            const enemies = [
-                { id: 'E1', x: 60, y: 30 }, { id: 'E2', x: -70, y: -50 }
-            ];
-            const teamStatus = [
-                { id: 'F1', alive: true, respawn: 0 },
-                { id: 'F2', alive: false, respawn: 12 }
-            ];
-            const enemyStatus = [
-                { id: 'E1', alive: true, respawn: 0 },
-                { id: 'E2', alive: false, respawn: 8 }
-            ];
-
-            // abilities state + timer loop
-            const initialCd = { A: 0, B: 0 };
-            const [cds, setCds] = useState(initialCd);
+            // abilities
+            const [cds, setCds] = useState({ A: 0, B: 0 });
             useEffect(() => {
                 const timer = setInterval(() => {
                     setCds(prev => {
-                        const next = { ...prev };
-                        Object.keys(next).forEach(k => {
-                            if (next[k] > 0) next[k] = Math.max(0, next[k] - 1);
-                        });
-                        return next;
+                        const nxt = { ...prev };
+                        for (const k in nxt) if (nxt[k] > 0) nxt[k]--;
+                        return nxt;
                     });
                 }, 1000);
                 return () => clearInterval(timer);
             }, []);
 
-            // health class + warning
+            // map rotation
+            const [angle, setAngle] = useState(0);
+            // draggable target offset
+            const [targetX, setTargetX] = useState(0);
+            const dragging = useRef(false);
+
+            // hover detection threshold = crosshair radius (~22px)
+            const hovered = Math.abs(targetX) < 22;
+
+            // health classes
             const healthClass =
-                health > 75 ? 'healthy'
-                    : health > 50 ? 'wounded'
-                        : health > 25 ? 'alert'
-                            : 'critical';
+                health > 75 ? 'healthy' :
+                    health > 50 ? 'wounded' :
+                        health > 25 ? 'alert' : 'critical';
 
             const warning =
-                health <= 25 ? ['CRITICAL HEALTH!', 'critical']
-                    : health <= 50 ? ['ALERT: Low Health', 'alert']
-                        : health <= 75 ? ['Warning: Injured', 'warn']
-                            : null;
+                health <= 25 ? ['CRITICAL HEALTH!', 'critical'] :
+                    health <= 50 ? ['ALERT: Low Health', 'alert'] :
+                        health <= 75 ? ['Warning: Injured', 'warn'] : null;
+
+            // unit data
+            const friends = [{ id: 'F1', x: -30, y: 20 }, { id: 'F2', x: 50, y: -40 }];
+            const enemies = [{ id: 'E1', x: 60, y: 30 }, { id: 'E2', x: -70, y: -50 }];
+            const teamStatus = [{ id: 'F1', alive: true, respawn: 0 }, { id: 'F2', alive: false, respawn: 12 }];
+            const enemyStatus = [{ id: 'E1', alive: true, respawn: 0 }, { id: 'E2', alive: false, respawn: 8 }];
+
+            // drag handlers
+            const onMouseDown = e => dragging.current = true;
+            const onMouseUp = e => dragging.current = false;
+            const onMouseMove = e => {
+                if (!dragging.current) return;
+                // compute offset from center
+                const centerX = window.innerWidth / 2;
+                setTargetX(e.clientX - centerX);
+            };
+            useEffect(() => {
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+                return () => {
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+            }, []);
 
             return (
                 <div className="overlay">
-                    {/* Abilities */}
+                    {/* Cooldowns */}
                     <div className="ability-bar">
-                        {['A', 'B'].map(key => (
-                            <div key={key} className="ability">
-                                {key}
-                                {cds[key] > 0 && (
-                                    <div className="cd-overlay">
-                                        {cds[key]}s
-                                    </div>
-                                )}
+                        {['A', 'B'].map(k => (
+                            <div key={k} className="ability">
+                                {k}
+                                {cds[k] > 0 && <div className="cd-overlay">{cds[k]}s</div>}
                             </div>
                         ))}
                     </div>
 
                     {/* Crosshair */}
-                    <div className={`crosshair ${transparent ? 'transparent' : ''} ${healthClass}`} />
+                    <div className={`crosshair ${transparent ? 'transparent' : ''} ${healthClass} ${hovered ? 'hovered' : ''}`}>
+                        <div className={`center-dot ${healthClass}`}></div>
+                        <div className="center-x">X</div>
+                    </div>
 
                     {/* Health warning */}
                     {warning && (
@@ -398,28 +489,15 @@
                     </div>
 
                     {/* Minimap */}
-                    <div className="minimap">
-                        {friends.map(f => (
-                            <div
-                                key={f.id}
-                                className="unit friend"
+                    <div className={`minimap ${healthClass}`} style={{ transform: `translate(-50%,-50%) rotate(${angle}deg)` }}>
+                        {[...friends, ...enemies].map(u => (
+                            <div key={u.id}
+                                className={`unit ${friends.find(f => f.id === u.id) ? 'friend' : 'enemy'}`}
                                 style={{
-                                    left: `calc(50% + ${f.x}px)`,
-                                    top: `calc(50% + ${f.y}px)`
+                                    left: `calc(50% + ${u.x}px)`,
+                                    top: `calc(50% + ${u.y}px)`
                                 }}
-                                title={f.id}
-                            />
-                        ))}
-                        {enemies.map(e => (
-                            <div
-                                key={e.id}
-                                className="unit enemy"
-                                style={{
-                                    left: `calc(50% + ${e.x}px)`,
-                                    top: `calc(50% + ${e.y}px)`
-                                }}
-                                title={e.id}
-                            />
+                                title={u.id} />
                         ))}
                     </div>
 
@@ -447,28 +525,27 @@
                         ))}
                     </ul>
 
-                    {/* Testing panel */}
+                    {/* Draggable target */}
+                    <div className="draggable-target"
+                        style={{ left: `calc(50% + ${targetX}px)` }}
+                        onMouseDown={onMouseDown}
+                    />
+
+                    {/* Testing controls */}
                     <div className="testing-panel">
                         <label>Health {health}%</label>
-                        <input
-                            type="range" min="0" max="100"
+                        <input type="range" min="0" max="100"
                             value={health}
-                            onChange={e => setHealth(+e.target.value)}
-                        />
-
-                        <button onClick={() => setCds(prev => ({ ...prev, A: 10 }))}>
-                            Trigger A
-                        </button>
-                        <button onClick={() => setCds(prev => ({ ...prev, B: 8 }))}>
-                            Trigger B
-                        </button>
+                            onChange={e => setHealth(+e.target.value)} />
+                        <button onClick={() => setCds(prev => ({ ...prev, A: 10 }))}>Trigger A</button>
+                        <button onClick={() => setCds(prev => ({ ...prev, B: 8 }))}>Trigger B</button>
+                        <button onClick={() => setAngle(a => a + 45)}>Rotate Map</button>
                     </div>
                 </div>
             );
         }
 
-        ReactDOM.createRoot(document.getElementById('root'))
-            .render(<Overlay />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<Overlay />);
     </script>
 </body>
 
