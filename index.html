@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" data-character="ironman">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marvel Rivals Overlay</title>
+    <!-- React + ReactDOM + Babel (for JSX) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+        /* --- Character themes via CSS variables --- */
+        :root {
+            --primary-color: #e62429;
+            /* default */
+            --secondary-color: #f5c542;
+        }
+
+        html[data-character="ironman"] {
+            --primary-color: #e62429;
+            --secondary-color: #f5c542;
+        }
+
+        html[data-character="spiderman"] {
+            --primary-color: #e23f31;
+            --secondary-color: #000000;
+        }
+
+        /* Add more themes as needed */
+
+        /* --- Overlay container --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            font-family: sans-serif;
+            color: white;
+        }
+
+        /* --- Crosshair --- */
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            margin: -20px 0 0 -20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary-color);
+            transition: opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .crosshair.transparent {
+            opacity: 0.2;
+        }
+
+        /* --- Minimap --- */
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .minimap .center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .minimap .friend,
+        .minimap .enemy {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .minimap .friend {
+            background: #00aaff;
+        }
+
+        .minimap .enemy {
+            background: #ff0055;
+        }
+
+        /* --- Status panels --- */
+        .status-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .status-panel h3 {
+            margin: 0 0 6px;
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        .status-panel div {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .status-panel .dead {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function Overlay() {
+            // transparency on mouse move
+            const [transparent, setTransparent] = useState(false);
+
+            // dummy data; replace with real Overwolf game-data hooks
+            const [friends] = useState([
+                { id: 'F1', x: 30, y: 70 },
+                { id: 'F2', x: 60, y: 40 }
+            ]);
+            const [enemies] = useState([
+                { id: 'E1', x: 80, y: 20 },
+                { id: 'E2', x: 10, y: 50 }
+            ]);
+            const [teamStatus] = useState([
+                { id: 'F1', alive: true, respawn: 0 },
+                { id: 'F2', alive: false, respawn: 12 }
+            ]);
+            const [enemyStatus] = useState([
+                { id: 'E1', alive: true, respawn: 0 },
+                { id: 'E2', alive: false, respawn: 8 }
+            ]);
+
+            useEffect(() => {
+                let timeout;
+                const handleMove = () => {
+                    setTransparent(true);
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => setTransparent(false), 400);
+                };
+                window.addEventListener('mousemove', handleMove);
+                return () => {
+                    window.removeEventListener('mousemove', handleMove);
+                    clearTimeout(timeout);
+                };
+            }, []);
+
+            // example: switch theme dynamically
+            // useEffect(() => { document.documentElement.dataset.character = 'spiderman'; }, []);
+
+            return (
+                <div className="overlay">
+                    <div className={`crosshair ${transparent ? 'transparent' : ''}`}></div>
+
+                    <div className="minimap">
+                        <div className="center"></div>
+                        {friends.map(f => (
+                            <div
+                                key={f.id}
+                                className="friend"
+                                style={{ top: `${f.y}%`, left: `${f.x}%` }}
+                                title={f.id}
+                            />
+                        ))}
+                        {enemies.map(e => (
+                            <div
+                                key={e.id}
+                                className="enemy"
+                                style={{ top: `${e.y}%`, left: `${e.x}%` }}
+                                title={e.id}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="status-panel">
+                        <h3>Your Team</h3>
+                        {teamStatus.map(p => (
+                            <div key={p.id}>
+                                {p.id}:{" "}
+                                <span className={p.alive ? "" : "dead"}>
+                                    {p.alive ? "Alive" : `Respawn in ${p.respawn}s`}
+                                </span>
+                            </div>
+                        ))}
+                        <h3>Enemies</h3>
+                        {enemyStatus.map(p => (
+                            <div key={p.id}>
+                                {p.id}:{" "}
+                                <span className={p.alive ? "" : "dead"}>
+                                    {p.alive ? "Alive" : `Respawn in ${p.respawn}s`}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<Overlay />);
+    </script>
+</body>
+
+</html>
